@@ -22,8 +22,8 @@ from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras import KerasCategorical
 from donkeycar.parts.actuator import PCA9685, PWMSteering, PWMThrottle
-from donkeycar.parts.datastore import TubGroup, TubWriter
-from donkeycar.parts.controller import LocalWebController, JoystickController
+from donkeycar.parts.datastore import TubGroup, TubWriter, TubHandler
+from donkeycar.parts.controller_logicool import LocalWebController, JoystickController
 from donkeycar.parts.clock import Timestamp
 
 
@@ -49,7 +49,9 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     if use_joystick or cfg.USE_JOYSTICK_AS_DEFAULT:
         ctr = JoystickController(max_throttle=cfg.JOYSTICK_MAX_THROTTLE,
                                  steering_scale=cfg.JOYSTICK_STEERING_SCALE,
-                                 auto_record_on_throttle=cfg.AUTO_RECORD_ON_THROTTLE)
+                                 auto_record_on_throttle=cfg.AUTO_RECORD_ON_THROTTLE,
+                                 steering_dir=cfg.STEERING_DIR,
+                                 throttle_dir=cfg.THROTTLE_DIR)
     else:
         # This web controller will create a web server that is capable
         # of managing steering, throttle, and modes, and more.
@@ -118,12 +120,15 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     inputs = ['cam/image_array', 'user/angle', 'user/throttle', 'user/mode', 'timestamp']
     types = ['image_array', 'float', 'float',  'str', 'str']
 
-    #multiple tubs
-    #th = TubHandler(path=cfg.DATA_PATH)
-    #tub = th.new_tub_writer(inputs=inputs, types=types)
+    if cfg.USE_SINGLE_TUB == False:
+        #multiple tubs
+        th = TubHandler(path=cfg.DATA_PATH)
+        tub = th.new_tub_writer(inputs=inputs, types=types)
 
-    # single tub
-    tub = TubWriter(path=cfg.TUB_PATH, inputs=inputs, types=types)
+    else:
+        # single tub
+        tub = TubWriter(path=cfg.TUB_PATH, inputs=inputs, types=types)
+
     V.add(tub, inputs=inputs, run_condition='recording')
 
     # run the vehicle

@@ -21,9 +21,9 @@ import donkeycar as dk
 from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras import KerasCategorical
-from donkeycar.parts.actuator import PCA9685, PWMSteering, PWMThrottle
-from donkeycar.parts.datastore import TubGroup, TubWriter
-from donkeycar.parts.controller import LocalWebController, JoystickController
+from donkeycar.parts.actuator_zumo import PCA9685, ZumoSteering, ZumoThrottle
+from donkeycar.parts.datastore import TubGroup, TubWriter, TubHandler
+from donkeycar.parts.controller_logicool import LocalWebController, JoystickController
 from donkeycar.parts.clock import Timestamp
 
 
@@ -100,13 +100,13 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
                   'pilot/angle', 'pilot/throttle'],
           outputs=['angle', 'throttle'])
 
-    steering_controller = PCA9685(cfg.STEERING_CHANNEL)
-    steering = PWMSteering(controller=steering_controller,
+    steering_controller = None
+    steering = ZumoSteering(controller=steering_controller,
                            left_pulse=cfg.STEERING_LEFT_PWM,
                            right_pulse=cfg.STEERING_RIGHT_PWM)
 
-    throttle_controller = PCA9685(cfg.THROTTLE_CHANNEL)
-    throttle = PWMThrottle(controller=throttle_controller,
+    throttle_controller = None
+    throttle = ZumoThrottle(controller=throttle_controller,
                            max_pulse=cfg.THROTTLE_FORWARD_PWM,
                            zero_pulse=cfg.THROTTLE_STOPPED_PWM,
                            min_pulse=cfg.THROTTLE_REVERSE_PWM)
@@ -118,12 +118,15 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     inputs = ['cam/image_array', 'user/angle', 'user/throttle', 'user/mode', 'timestamp']
     types = ['image_array', 'float', 'float',  'str', 'str']
 
-    #multiple tubs
-    #th = TubHandler(path=cfg.DATA_PATH)
-    #tub = th.new_tub_writer(inputs=inputs, types=types)
+    if cfg.USE_SINGLE_TUB == False:
+        #multiple tubs
+        th = TubHandler(path=cfg.DATA_PATH)
+        tub = th.new_tub_writer(inputs=inputs, types=types)
 
-    # single tub
-    tub = TubWriter(path=cfg.TUB_PATH, inputs=inputs, types=types)
+    else:
+        # single tub
+        tub = TubWriter(path=cfg.TUB_PATH, inputs=inputs, types=types)
+
     V.add(tub, inputs=inputs, run_condition='recording')
 
     # run the vehicle
