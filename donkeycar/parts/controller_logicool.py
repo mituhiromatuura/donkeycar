@@ -374,7 +374,7 @@ class JoystickController(object):
                     self.on_throttle_changes()
                 else:
                     self.constant_throttle = True
-                    self.throttle = (self.throttle_scale * -1 * self.max_throttle)
+                    self.throttle = self.max_throttle
                     self.on_throttle_changes()
                 print('constant_throttle:', self.constant_throttle)
 
