@@ -203,9 +203,7 @@ class JoystickController(object):
                  steering_scale=1.0,
                  throttle_scale=-1.0,
                  dev_fn='/dev/input/js0',
-                 auto_record_on_throttle=True,
-                 steering_dir=1,
-                 throttle_dir=1):
+                 auto_record_on_throttle=True):
 
         self.angle = 0.0
         self.throttle = 0.0
@@ -220,8 +218,6 @@ class JoystickController(object):
         self.recording = False
         self.constant_throttle = False
         self.auto_record_on_throttle = auto_record_on_throttle
-        self.steering_dir = steering_dir
-        self.throttle_dir = throttle_dir
         self.dev_fn = dev_fn
         self.js = None
 
@@ -279,12 +275,12 @@ class JoystickController(object):
             button, button_state, axis, axis_val = self.js.poll()
 
             if axis == self.steering_axis:
-                self.angle = self.steering_scale * axis_val * self.steering_dir
+                self.angle = self.steering_scale * axis_val
                 print("angle", self.angle)
 
             if axis == self.throttle_axis:
                 #this value is often reversed, with positive value when pulling down
-                self.throttle = (self.throttle_scale * axis_val * self.max_throttle * self.throttle_dir)
+                self.throttle = (self.throttle_scale * axis_val * self.max_throttle)
                 print("throttle", self.throttle)
                 self.on_throttle_changes()
 
@@ -378,7 +374,7 @@ class JoystickController(object):
                     self.on_throttle_changes()
                 else:
                     self.constant_throttle = True
-                    self.throttle = (self.throttle_scale * -1 * self.max_throttle * self.throttle_dir)
+                    self.throttle = (self.throttle_scale * -1 * self.max_throttle)
                     self.on_throttle_changes()
                 print('constant_throttle:', self.constant_throttle)
 

@@ -21,7 +21,7 @@ import donkeycar as dk
 from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras import KerasCategorical
-from donkeycar.parts.actuator import PCA9685, PWMSteering, PWMThrottle
+from donkeycar.parts.actuator_tamiya import PCA9685, PWMSteering, PWMThrottle
 from donkeycar.parts.datastore import TubGroup, TubWriter, TubHandler
 from donkeycar.parts.controller_logicool import LocalWebController, JoystickController
 from donkeycar.parts.clock import Timestamp
@@ -49,9 +49,7 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     if use_joystick or cfg.USE_JOYSTICK_AS_DEFAULT:
         ctr = JoystickController(max_throttle=cfg.JOYSTICK_MAX_THROTTLE,
                                  steering_scale=cfg.JOYSTICK_STEERING_SCALE,
-                                 auto_record_on_throttle=cfg.AUTO_RECORD_ON_THROTTLE,
-                                 steering_dir=cfg.STEERING_DIR,
-                                 throttle_dir=cfg.THROTTLE_DIR)
+                                 auto_record_on_throttle=cfg.AUTO_RECORD_ON_THROTTLE)
     else:
         # This web controller will create a web server that is capable
         # of managing steering, throttle, and modes, and more.
@@ -105,13 +103,15 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     steering_controller = PCA9685(cfg.STEERING_CHANNEL)
     steering = PWMSteering(controller=steering_controller,
                            left_pulse=cfg.STEERING_LEFT_PWM,
-                           right_pulse=cfg.STEERING_RIGHT_PWM)
+                           right_pulse=cfg.STEERING_RIGHT_PWM,
+                           dir=cfg.STEERING_DIR)
 
     throttle_controller = PCA9685(cfg.THROTTLE_CHANNEL)
     throttle = PWMThrottle(controller=throttle_controller,
                            max_pulse=cfg.THROTTLE_FORWARD_PWM,
                            zero_pulse=cfg.THROTTLE_STOPPED_PWM,
-                           min_pulse=cfg.THROTTLE_REVERSE_PWM)
+                           min_pulse=cfg.THROTTLE_REVERSE_PWM,
+                           dir=cfg.THROTTLE_DIR)
 
     V.add(steering, inputs=['angle'])
     V.add(throttle, inputs=['throttle'])
