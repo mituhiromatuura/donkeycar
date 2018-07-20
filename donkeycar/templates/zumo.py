@@ -21,7 +21,9 @@ import donkeycar as dk
 from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras import KerasCategorical
-from donkeycar.parts.actuator_zumo import PCA9685, ZumoSteering, ZumoThrottle
+from donkeycar.parts.actuator import PCA9685
+from donkeycar.parts.actuator_zumo import ZumoSteering, ZumoThrottle
+from donkeycar.parts.actuator_pantilt import PWMPanTilt
 from donkeycar.parts.datastore import TubGroup, TubWriter, TubHandler
 from donkeycar.parts.controller_logicool import LocalWebController, JoystickController
 from donkeycar.parts.clock import Timestamp
@@ -50,15 +52,36 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
         ctr = JoystickController(max_throttle=cfg.JOYSTICK_MAX_THROTTLE,
                                  steering_scale=cfg.JOYSTICK_STEERING_SCALE,
                                  auto_record_on_throttle=cfg.AUTO_RECORD_ON_THROTTLE)
+
+        V.add(ctr,
+              inputs=['cam/image_array'],
+              outputs=['user/angle', 'user/throttle', 'user/mode', 'recording', 'pan', 'tilt'],
+              threaded=True)
+
+        pan_controller = PCA9685(cfg.PAN_CHANNEL)
+        pan = PWMPanTilt(controller=pan_controller,
+                         left_pulse=cfg.PAN_LEFT_PWM,
+                         right_pulse=cfg.PAN_RIGHT_PWM,
+                         dir=cfg.PAN_DIR)
+
+        tilt_controller = PCA9685(cfg.TILT_CHANNEL)
+        tilt = PWMPanTilt(controller=tilt_controller,
+                          left_pulse=cfg.TILT_DOWN_PWM,
+                          right_pulse=cfg.TILT_UP_PWM,
+                          dir=cfg.TILT_DIR)
+
+        V.add(pan, inputs=['pan'])
+        V.add(tilt, inputs=['tilt'])
+
     else:
         # This web controller will create a web server that is capable
         # of managing steering, throttle, and modes, and more.
         ctr = LocalWebController(use_chaos=use_chaos)
 
-    V.add(ctr,
-          inputs=['cam/image_array'],
-          outputs=['user/angle', 'user/throttle', 'user/mode', 'recording'],
-          threaded=True)
+        V.add(ctr,
+              inputs=['cam/image_array'],
+              outputs=['user/angle', 'user/throttle', 'user/mode', 'recording'],
+              threaded=True)
 
     # See if we should even run the pilot module.
     # This is only needed because the part run_condition only accepts boolean
@@ -100,16 +123,18 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
                   'pilot/angle', 'pilot/throttle'],
           outputs=['angle', 'throttle'])
 
-    steering_controller = None
-    steering = ZumoSteering(controller=steering_controller,
-                           left_pulse=cfg.STEERING_LEFT_PWM,
-                           right_pulse=cfg.STEERING_RIGHT_PWM)
+    steering = ZumoSteering()
 
-    throttle_controller = None
-    throttle = ZumoThrottle(controller=throttle_controller,
-                           max_pulse=cfg.THROTTLE_FORWARD_PWM,
-                           zero_pulse=cfg.THROTTLE_STOPPED_PWM,
-                           min_pulse=cfg.THROTTLE_REVERSE_PWM)
+    throttle_controller_l = PCA9685(cfg.THROTTLE_L_CHANNEL)
+    throttle_controller_r = PCA9685(cfg.THROTTLE_R_CHANNEL)
+
+    throttle = ZumoThrottle(controller_l=throttle_controller_l,
+                            controller_r=throttle_controller_r,
+                            gpio_l=cfg.THROTTLE_L_GPIO,
+                            gpio_r=cfg.THROTTLE_R_GPIO,
+                            max_pulse=cfg.THROTTLE_FORWARD_PWM,
+                            zero_pulse=cfg.THROTTLE_STOPPED_PWM,
+                            min_pulse=cfg.THROTTLE_REVERSE_PWM)
 
     V.add(steering, inputs=['angle'])
     V.add(throttle, inputs=['throttle'])

@@ -22,7 +22,7 @@ from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras import KerasCategorical
 from donkeycar.parts.actuator import PCA9685
-from donkeycar.parts.actuator_picar import PWMSteering, PWMThrottle
+from donkeycar.parts.actuator_pimouse import PimouseSteering, PimouseThrottle
 from donkeycar.parts.actuator_pantilt import PWMPanTilt
 from donkeycar.parts.datastore import TubGroup, TubWriter, TubHandler
 from donkeycar.parts.controller_logicool import LocalWebController, JoystickController
@@ -123,20 +123,13 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
                   'pilot/angle', 'pilot/throttle'],
           outputs=['angle', 'throttle'])
 
-    steering_controller = PCA9685(cfg.STEERING_CHANNEL)
-    steering = PWMSteering(controller=steering_controller,
-                           left_pulse=cfg.STEERING_LEFT_PWM,
-                           right_pulse=cfg.STEERING_RIGHT_PWM,
-                           dir=cfg.STEERING_DIR)
+    steering = PimouseSteering()
 
-    throttle_controller_l = PCA9685(cfg.THROTTLE_L_CHANNEL)
-    throttle_controller_r = PCA9685(cfg.THROTTLE_R_CHANNEL)
-    throttle = PWMThrottle(controller_l=throttle_controller_l,
-                           controller_r=throttle_controller_r,
-                           max_pulse=cfg.THROTTLE_FORWARD_PWM,
-                           zero_pulse=cfg.THROTTLE_STOPPED_PWM,
-                           min_pulse=cfg.THROTTLE_REVERSE_PWM,
-                           dir=cfg.THROTTLE_DIR)
+    throttle_controller = None
+    throttle = PimouseThrottle(controller=throttle_controller,
+                               max_pulse=cfg.THROTTLE_FORWARD_PWM,
+                               zero_pulse=cfg.THROTTLE_STOPPED_PWM,
+                               min_pulse=cfg.THROTTLE_REVERSE_PWM)
 
     V.add(steering, inputs=['angle'])
     V.add(throttle, inputs=['throttle'])

@@ -7,24 +7,6 @@ are wrapped in a mixer class before being used in the drive loop.
 import time
 import donkeycar as dk
 
-class PCA9685:
-    """
-    PWM motor controler using PCA9685 boards.
-    This is used for most RC Cars
-    """
-    def __init__(self, channel, frequency=60):
-        import Adafruit_PCA9685
-        # Initialise the PCA9685 using the default address (0x40).
-        self.pwm = Adafruit_PCA9685.PCA9685()
-        self.pwm.set_pwm_freq(frequency)
-        self.channel = channel
-
-    def set_pulse(self, pulse):
-        self.pwm.set_pwm(self.channel, 0, pulse)
-
-    def run(self, pulse):
-        self.set_pulse(pulse)
-
 class PWMSteering:
     """
     Wrapper over a PWM motor cotnroller to convert angles to PWM pulses.
