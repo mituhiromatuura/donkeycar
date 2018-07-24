@@ -58,20 +58,21 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
               outputs=['user/angle', 'user/throttle', 'user/mode', 'recording', 'pan', 'tilt'],
               threaded=True)
 
-        pan_controller = PCA9685(cfg.PAN_CHANNEL)
-        pan = PWMPanTilt(controller=pan_controller,
-                         left_pulse=cfg.PAN_LEFT_PWM,
-                         right_pulse=cfg.PAN_RIGHT_PWM,
-                         dir=cfg.PAN_DIR)
+        if cfg.USE_PAN:
+            pan_controller = PCA9685(cfg.PAN_CHANNEL)
+            pan = PWMPanTilt(controller=pan_controller,
+                             left_pulse=cfg.PAN_LEFT_PWM,
+                             right_pulse=cfg.PAN_RIGHT_PWM,
+                             dir=cfg.PAN_DIR)
+            V.add(pan, inputs=['pan'])
 
-        tilt_controller = PCA9685(cfg.TILT_CHANNEL)
-        tilt = PWMPanTilt(controller=tilt_controller,
-                          left_pulse=cfg.TILT_DOWN_PWM,
-                          right_pulse=cfg.TILT_UP_PWM,
-                          dir=cfg.TILT_DIR)
-
-        V.add(pan, inputs=['pan'])
-        V.add(tilt, inputs=['tilt'])
+        if cfg.USE_TILT:
+            tilt_controller = PCA9685(cfg.TILT_CHANNEL)
+            tilt = PWMPanTilt(controller=tilt_controller,
+                              left_pulse=cfg.TILT_DOWN_PWM,
+                              right_pulse=cfg.TILT_UP_PWM,
+                              dir=cfg.TILT_DIR)
+            V.add(tilt, inputs=['tilt'])
 
     else:
         # This web controller will create a web server that is capable
