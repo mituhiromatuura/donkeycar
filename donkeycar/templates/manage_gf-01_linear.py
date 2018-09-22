@@ -16,7 +16,6 @@ import os
 from docopt import docopt
 
 import donkeycar as dk
-from donkeycar.parts.camera import PiCamera
 from donkeycar.parts.transform import Lambda
 from donkeycar.parts.keras_linear import KerasLinear
 from donkeycar.parts.actuator import PCA9685
@@ -43,7 +42,12 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
     clock = Timestamp()
     V.add(clock, outputs=['timestamp'])
 
-    cam = PiCamera(resolution=cfg.CAMERA_RESOLUTION)
+    if cfg.CAMERA_TYPE == "WEBCAM":
+        from donkeycar.parts.camera import Webcam
+        cam = Webcam()
+    else:
+        from donkeycar.parts.camera import PiCamera
+        cam = PiCamera(resolution=cfg.CAMERA_RESOLUTION)
     V.add(cam, outputs=['cam/image_array'], threaded=True)
 
     if use_joystick or cfg.USE_JOYSTICK_AS_DEFAULT:
@@ -116,6 +120,10 @@ def drive(cfg, model_path=None, use_joystick=False, use_chaos=False):
             return pilot_angle, user_throttle
 
         else:
+            print(user_throttle)
+            user_throttle = user_throttle * cfg.THROTTLE_PILOT_WEIGHT
+            if(user_throttle < cfg.THROTTLE_PILOT_LIMIT):
+                user_throttle = cfg.THROTTLE_PILOT_LIMIT
             return pilot_angle, pilot_throttle
 
     drive_mode_part = Lambda(drive_mode)
